@@ -79,6 +79,7 @@ cd frontend && npm run typecheck
 - `src/pocket_dm/models.py`: SQLAlchemy tables (campaigns, sessions, characters, handbook)
 - `src/pocket_dm/schemas.py`: Pydantic schemas for API payloads and exports
 - `src/pocket_dm/db.py`, `repo.py`: engine/session setup and record access
+- `src/pocket_dm/migrations/`, `migrate.py`: Alembic migrations, applied on startup
 - `src/pocket_dm/game.py`: initiative tracker, rewards and rests
 - `src/pocket_dm/dice.py`: dice and arithmetic parser/evaluator (no `eval`)
 - `src/pocket_dm/rules.py`: 5e numbers and derived character stats
@@ -87,10 +88,30 @@ cd frontend && npm run typecheck
 - `scripts/build_srd.py`: regenerates `src/pocket_dm/data/srd.json.gz` from
   [5e-bits/5e-database](https://github.com/5e-bits/5e-database)
 
-The database schema is created on startup. Nested sheet data (inventory, spells,
-the encounter, etc.) is stored in JSON columns; links between records are real
-foreign keys (deleting a campaign deletes its sessions and unlinks characters and
-handbook entries).
+Nested sheet data (inventory, spells, the encounter, etc.) is stored in JSON
+columns; links between records are real foreign keys (deleting a campaign deletes
+its sessions and unlinks characters and handbook entries).
+
+### Database migrations
+
+The schema is managed with [Alembic](https://alembic.sqlalchemy.org/). The app
+upgrades the database to the latest migration every time it starts, so users
+never run anything by hand. After changing `models.py`:
+
+```sh
+uv run alembic revision --autogenerate -m "add character portrait"
+# review the new file in src/pocket_dm/migrations/versions/, then:
+uv run pytest                  # fails if models and migrations disagree
+```
+
+The `alembic` command targets your normal database (`$POCKET_DM_DATA` or
+`~/.local/share/pocket-dm/pocket-dm.db`); add `-x db=path/to/file.db` to use
+another. Other useful commands: `alembic current`, `alembic history`,
+`alembic check`, `alembic downgrade -1`.
+
+SQLite can't alter columns in place, so migrations run in Alembic's batch mode
+(tables are rebuilt), with foreign keys switched off meanwhile so rebuilding
+`campaigns` doesn't cascade-delete sessions.
 
 ## License and attribution
 

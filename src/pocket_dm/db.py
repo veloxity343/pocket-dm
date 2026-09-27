@@ -10,7 +10,7 @@ from pathlib import Path
 from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
-from .models import Base
+from . import migrate
 
 DB_FILENAME = "pocket-dm.db"
 
@@ -37,7 +37,7 @@ class Database:
             self.path = None
         self.engine: Engine = create_engine(url, connect_args={"check_same_thread": False})
         event.listen(self.engine, "connect", _sqlite_pragmas)
-        Base.metadata.create_all(self.engine)
+        migrate.upgrade(self.engine)
         self._sessions = sessionmaker(self.engine, expire_on_commit=False)
 
     @contextmanager
