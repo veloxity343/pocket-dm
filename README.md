@@ -59,34 +59,38 @@ uv run pocket-dm import backup.json house-rules.md --mode skip
 
 ## Development
 
-Run the API and the Vite dev server together, with hot reloading:
+Common tasks are in the `Makefile` (run `make` to list them):
 
 ```sh
-cd frontend && npm install    # first time only
-npm run dev:all               # API on :8765 + UI on http://localhost:5173 (proxies /api)
+make install     # uv sync + npm install (first time)
+make dev         # API on :8765 + UI on http://localhost:5173, hot reload
+make check       # backend tests + frontend typecheck
+make migration m="describe the change"   # after editing models.py
+make package     # build the UI, then the wheel and sdist into dist/
 ```
 
-One Ctrl+C stops both, and if either one exits the other is stopped too.
-To run them separately, use `npm run dev:api` and `npm run dev` in two terminals.
-
-Interactive API docs are at http://localhost:8765/docs.
-
-```sh
-uv run pytest                  # backend tests
-cd frontend && npm run typecheck
-```
+`make dev` runs both servers with `concurrently`: one Ctrl+C stops both, and if
+either exits the other is stopped too. `make api` / `make web` run them on their
+own. Interactive API docs are at http://localhost:8765/docs.
 
 ### Building a release
 
-The Python package ships the compiled UI, so build the frontend first:
+The Python package ships the compiled UI, so the frontend is built before the
+wheel. `make package` does both and fails if the UI didn't make it into the
+wheel. By hand:
 
 ```sh
 cd frontend && npm run build && cd ..   # writes src/pocket_dm/web/
 uv build                                # dist/pocket_dm-*.whl and .tar.gz
 ```
 
-A package built without the first step still runs, but shows a "UI hasn't been
-built" page instead of the app.
+### Continuous integration
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push to `main` and on
+pull requests: backend tests, frontend typecheck, then `make package`, which
+installs the wheel into a clean environment, starts it, and checks the UI, SRD
+search and saving all work. The built wheel and sdist are attached to each run
+as a `dist` artifact.
 
 ### Layout
 
@@ -129,6 +133,8 @@ SQLite can't alter columns in place, so migrations run in Alembic's batch mode
 `campaigns` doesn't cascade-delete sessions.
 
 ## License and attribution
+
+Pocket DM is released under the [MIT License](LICENSE).
 
 This work includes material taken from the System Reference Document 5.1
 ("SRD 5.1") by Wizards of the Coast LLC and available at
