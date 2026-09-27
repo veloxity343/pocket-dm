@@ -59,12 +59,15 @@ uv run pocket-dm import backup.json house-rules.md --mode skip
 
 ## Development
 
-Run the API and the Vite dev server side by side for hot reloading:
+Run the API and the Vite dev server together, with hot reloading:
 
 ```sh
-uv run pocket-dm serve --no-browser     # API on :8765
-cd frontend && npm run dev              # UI on :5173, proxies /api to :8765
+cd frontend && npm install    # first time only
+npm run dev:all               # API on :8765 + UI on http://localhost:5173 (proxies /api)
 ```
+
+One Ctrl+C stops both, and if either one exits the other is stopped too.
+To run them separately, use `npm run dev:api` and `npm run dev` in two terminals.
 
 Interactive API docs are at http://localhost:8765/docs.
 
@@ -72,6 +75,18 @@ Interactive API docs are at http://localhost:8765/docs.
 uv run pytest                  # backend tests
 cd frontend && npm run typecheck
 ```
+
+### Building a release
+
+The Python package ships the compiled UI, so build the frontend first:
+
+```sh
+cd frontend && npm run build && cd ..   # writes src/pocket_dm/web/
+uv build                                # dist/pocket_dm-*.whl and .tar.gz
+```
+
+A package built without the first step still runs, but shows a "UI hasn't been
+built" page instead of the app.
 
 ### Layout
 
